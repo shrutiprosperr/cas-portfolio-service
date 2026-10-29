@@ -1,0 +1,38 @@
+plugins {
+    id "java"
+    id "application"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.apache.pdfbox:pdfbox:3.0.5"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.2"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2"
+    implementation "io.javalin:javalin:6.4.0"
+    implementation "org.slf4j:slf4j-simple:2.0.16"
+    implementation "org.postgresql:postgresql:42.7.5"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+application {
+    mainClass = "com.prosperr.cas.CasPortfolioApplication"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-parameters")
+}
+
+tasks.named("test") {
+    useJUnitPlatform()
+}

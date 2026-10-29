@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAS portfolio</title>
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #5c6b7a;
+      --line: #d9e0e7;
+      --paper: #f4f6f8;
+      --card: #fff;
+      --accent: #1f4e79;
+      --ok: #1b7f4e;
+      --warn: #9a6700;
+      --bad: #a12622;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    header, main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 28px 0 8px; }
+    h1 { font-size: 28px; margin: 0 0 4px; }
+    p.lead { margin: 0; color: var(--muted); }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 16px;
+      margin: 20px 0;
+    }
+    label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+    input[type="file"], input[type="password"] {
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      min-width: 240px;
+    }
+    button {
+      font: inherit;
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .status { min-height: 1.4em; margin: 0 0 16px; }
+    .status.error { color: var(--bad); }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card, .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+    .card span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .card strong { display: block; margin-top: 6px; font-size: 22px; }
+    .facts { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin: 12px 0; }
+    h2 { font-size: 16px; margin: 0 0 10px; }
+    dl { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; margin: 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); font-size: 12px; }
+    .pill.ok { color: var(--ok); border-color: #b7dfc8; }
+    .pill.warn { color: var(--warn); border-color: #ead7a1; }
+    .checks { margin: 0; padding-left: 18px; }
+    .hidden { display: none; }
+    @media (max-width: 800px) {
+      .cards, .facts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CAS portfolio</h1>
+    <p class="lead">Upload a CAMS or KFintech statement. The page shows the checked holdings and the facts computed from them.</p>
+  </header>
+  <main>
+    <form id="upload">
+      <label>Statement PDF
+        <input id="file" name="file" type="file" accept="application/pdf,.pdf" required>
+      </label>
+      <label>Password, if the file is protected
+        <input id="password" name="password" type="password" autocomplete="off">
+      </label>
+      <button id="submit" type="submit">Read statement</button>
+    </form>
+    <p id="status" class="status"></p>
+    <section id="dashboard" class="hidden">
+      <div class="cards">
+        <div class="card"><span>Market value</span><strong id="market">—</strong></div>
+        <div class="card"><span>Invested</span><strong id="cost">—</strong></div>
+        <div class="card"><span>Gain</span><strong id="gain">—</strong></div>
+        <div class="card"><span>Check</span><strong id="integrity">—</strong></div>
+      </div>
+      <div class="facts">
+        <div class="panel">
+          <h2>Statement</h2>
+          <dl>
+            <dt>Investor</dt><dd id="investor">—</dd>
+            <dt>As of</dt><dd id="asof">—</dd>
+            <dt>Format</dt><dd id="format">—</dd>
+            <dt>Funds</dt><dd id="counts">—</dd>
+          </dl>
+        </div>
+        <div class="panel">
+          <h2>Profile</h2>
+          <dl>
+            <dt>Diversification</dt><dd id="diversification">—</dd>
+            <dt>Risk</dt><dd id="risk">—</dd>
+            <dt>Horizon</dt><dd id="horizon">—</dd>
+            <dt>Unclassified</dt><dd id="unclassified">—</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom: 12px">
+        <h2>Holdings</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Scheme</th>
+              <th>Folio</th>
+              <th class="num">Units</th>
+              <th class="num">Value</th>
+              <th class="num">Weight</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="holdings"></tbody>
+        </table>
+      </div>
+      <div class="panel" style="margin-bottom: 28px">
+        <h2>Checks</h2>
+        <ul id="checks" class="checks"></ul>
+      </div>
+    </section>
+  </main>
+  <script>
+    const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+    const form = document.getElementById("upload");
+    const status = document.getElementById("status");
+    const dashboard = document.getElementById("dashboard");
+    const submit = document.getElementById("submit");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = document.getElementById("file").files[0];
+      if (!file) return;
+      const body = new FormData();
+      body.append("file", file);
+      const password = document.getElementById("password").value;
+      if (password) body.append("password", password);
+      submit.disabled = true;
+      setStatus("Reading the statement…");
+      try {
+        const response = await fetch("/cas", { method: "POST", body });
+        const payload = await response.json();
+        if (!response.ok) {
+          showError(payload.message || "The file could not be read.");
+          return;
+        }
+        render(payload);
+        setStatus("Statement read.");
+      } catch (error) {
+        showError("The service did not respond.");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    loadCurrent();
+
+    async function loadCurrent() {
+      const response = await fetch("/cas/current");
+      if (!response.ok) return;
+      const stored = await response.json();
+      if (stored.analysis) render(stored.analysis);
+    }
+
+    function render(payload) {
+      const portfolio = payload.portfolio;
+      const summary = payload.insights.summary;
+      const profile = payload.insights.profile;
+      dashboard.classList.remove("hidden");
+      text("market", inr(summary.totalMarketValue));
+      text("cost", inr(summary.totalCostValue));
+      text("gain", inr(summary.unrealisedGain));
+      const integrity = document.getElementById("integrity");
+      integrity.textContent = portfolio.integrity.status === "ok" ? "Passed" : "Needs review";
+      integrity.className = portfolio.integrity.status === "ok" ? "pill ok" : "pill warn";
+      text("investor", portfolio.investor.name || "—");
+      text("asof", portfolio.source.statementAsOf || "—");
+      text("format", portfolio.source.format || "—");
+      text("counts", summary.activeCount + " active, " + summary.redeemedCount + " redeemed");
+      text("diversification", profile.diversification || "—");
+      text("risk", profile.risk || "—");
+      text("horizon", profile.horizon || "—");
+      text("unclassified", profile.unclassified && profile.unclassified.length ? profile.unclassified.join(", ") : "None");
+
+      const weights = new Map((summary.holdings || []).map((row) => [row.holdingKey, row.weightPct]));
+      const body = document.getElementById("holdings");
+      body.replaceChildren();
+      for (const holding of portfolio.holdings) {
+        const key = (holding.isin || "") + "|" + (holding.folio || "");
+        const row = document.createElement("tr");
+        row.innerHTML = "<td></td><td></td><td class='num'></td><td class='num'></td><td class='num'></td><td></td>";
+        const cells = row.children;
+        cells[0].textContent = holding.schemeName || holding.isin || "—";
+        cells[1].textContent = holding.folio || "—";
+        cells[2].textContent = holding.raw && holding.raw.units ? holding.raw.units : "—";
+        cells[3].textContent = inr(holding.marketValue);
+        cells[4].textContent = weights.has(key) && weights.get(key) != null ? weights.get(key) + "%" : "—";
+        cells[5].textContent = holding.status + (holding.flags && holding.flags.length ? " · " + holding.flags.join(", ") : "");
+        body.appendChild(row);
+      }
+
+      const checks = document.getElementById("checks");
+      checks.replaceChildren();
+      for (const check of portfolio.integrity.checks || []) {
+        const item = document.createElement("li");
+        item.textContent = (check.passed ? "Passed" : "Failed") + " — " + check.detail;
+        checks.appendChild(item);
+      }
+    }
+
+    function showError(message) {
+      status.textContent = message;
+      status.className = "status error";
+    }
+
+    function setStatus(message) {
+      status.textContent = message;
+      status.className = "status";
+    }
+
+    function text(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function inr(value) {
+      if (value === null || value === undefined || value === "") return "—";
+      return money.format(Number(value));
+    }
+  </script>
+</body>
+</html>
